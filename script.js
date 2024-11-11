@@ -16,13 +16,10 @@ function createGrid() {
     updateRobotPosition();
 }
 
-// Add an action to the queue
+// Add an action to the textarea queue
 function addAction(action) {
-    actionQueue.push(action);
-    const actionQueueList = document.getElementById('actionQueue');
-    const actionItem = document.createElement('li');
-    actionItem.textContent = action;
-    actionQueueList.appendChild(actionItem);
+    const actionQueueTextarea = document.getElementById('actionQueueTextarea');
+    actionQueueTextarea.value += action + '\n'; // Append action to textarea
 }
 
 // Update robot's position on the grid and color cell if needed
@@ -34,13 +31,25 @@ function updateRobotPosition(color = false) {
     
     // If the color action is executed, color the cell black
     if (color) {
-        currentCell.style.backgroundColor = 'black';
+        currentCell.style.backgroundColor = '#fb6b25';
     }
 }
 
 // Start moving the robot based on the queued actions
 function startMovement() {
+    // Read commands from textarea and populate actionQueue array
+    const actionQueueTextarea = document.getElementById('actionQueueTextarea');
+    actionQueue = actionQueueTextarea.value.trim().split('\n'); // Split each line as an action
+
+    if (actionQueue.length === 0 || actionQueue[0] === "") {
+        alert("No actions to execute! Please add actions first.");
+        return;
+    }
+
+    // Prevent multiple intervals from starting
     if (moveInterval) clearInterval(moveInterval);
+
+    // Begin executing actions
     moveInterval = setInterval(executeAction, 500); // Move every 500ms
 }
 
@@ -49,10 +58,23 @@ function stopMovement() {
     clearInterval(moveInterval);
 }
 
-// Reset the robot to the initial state
+// Restart the robot without clearing the command queue
+function restartRobot() {
+    // Clear the color of all cells
+    document.querySelectorAll('.grid div').forEach(cell => {
+        cell.style.backgroundColor = ''; // Reset color to default
+    });
+    
+    // Reset the robot position to the initial state
+    robotX = robotY = 0;
+    updateRobotPosition();
+    stopMovement();
+}
+
+// Reset the robot to the initial state, clear colors, and clear command queue
 function resetRobot() {
+    document.getElementById('actionQueueTextarea').value = ''; // Clear textarea
     actionQueue = [];
-    document.getElementById('actionQueue').innerHTML = '';
     robotX = robotY = 0;
 
     // Clear the color of all cells
@@ -71,18 +93,18 @@ function executeAction() {
         return;
     }
 
+    // Execute the first action in the queue
     const action = actionQueue.shift();
-    document.getElementById('actionQueue').removeChild(document.getElementById('actionQueue').childNodes[0]);
 
-    switch (action) {
-        case 'up': robotY = Math.max(0, robotY - 1); break;
-        case 'down': robotY = Math.min(14, robotY + 1); break;
-        case 'left': robotX = Math.max(0, robotX - 1); break;
-        case 'right': robotX = Math.min(14, robotX + 1); break;
+    switch (action.trim()) {
+        case 'up': robotY = Math.max(0, robotY - 1); updateRobotPosition(); break;
+        case 'down': robotY = Math.min(14, robotY + 1); updateRobotPosition(); break;
+        case 'left': robotX = Math.max(0, robotX - 1); updateRobotPosition(); break;
+        case 'right': robotX = Math.min(14, robotX + 1); updateRobotPosition(); break;
         case 'rotate': /* Rotation logic can be added here */ break;
         case 'color': updateRobotPosition(true); break;
+        default: console.warn(`Unknown command: ${action}`);
     }
-    updateRobotPosition();
 }
 
 // Initialize the grid on load
