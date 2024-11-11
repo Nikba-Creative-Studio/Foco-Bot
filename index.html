@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FocoBot - Algorithm Learning Robot</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="container">
+        <!-- Algorithm Section: List of Action Buttons -->
+        <div class="algorithm-section">
+            <h2>Algorithm Commands</h2>
+            <div class="action-buttons">
+                <button onclick="addAction('down')">Down</button>
+                <button onclick="addAction('up')">Up</button>
+                <button onclick="addAction('right')">Right</button>
+                <button onclick="addAction('left')">Left</button>
+                <button onclick="addAction('rotate')">Rotate</button>
+                <button onclick="addAction('color')">Color</button>
+            </div>
+            <div class="queue">
+                <h3>Command Queue</h3>
+                <ul id="actionQueue"></ul>
+            </div>
+            <div class="control-buttons">
+                <button onclick="startMovement()">Start</button>
+                <button onclick="stopMovement()">Stop</button>
+                <button onclick="resetRobot()">Reset</button>
+            </div>
+        </div>
+
+        <!-- Action Section: Grid and Robot Display -->
+        <div class="action-section">
+            <h2>Action Grid</h2>
+            <div id="grid" class="grid"></div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

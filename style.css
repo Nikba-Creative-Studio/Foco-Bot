@@ -1,0 +1,50 @@
+/* General styling for the layout */
+* {
+    box-sizing: border-box;
+}
+body {
+    font-family: Arial, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #f3f4f6;
+}
+
+.container {
+    display: flex;
+    gap: 20px;
+}
+
+.algorithm-section, .action-section {
+    padding: 20px;
+    border: 1px solid #ccc;
+    background-color: white;
+    border-radius: 8px;
+}
+
+.action-buttons button, .control-buttons button {
+    margin: 5px;
+    padding: 10px;
+    font-size: 16px;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(15, 30px);
+    grid-template-rows: repeat(15, 30px);
+    gap: 2px;
+    margin-top: 20px;
+}
+
+.grid div {
+    width: 30px;
+    height: 30px;
+    border: 1px solid #ddd;
+}
+
+.robot {
+    background-color: red;
+    border-radius: 50%;
+}
