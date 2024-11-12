@@ -3,9 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FocoBot - Algorithm Learning Robot</title>
-    <link rel="stylesheet" href="style.css">
+    <meta name="description" content="FocoBot is an algorithm learning app that can be programmed to move in different directions and change colors.">
     <meta name="author" content="Nikba Creative Studio">
+    
+    <title>FocoBot - Algorithm Learning Robot</title>
+    <link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body>
 
@@ -35,7 +37,10 @@
             </div>
             <div class="queue">
                 <h2>Command Queue</h2>
-                <textarea id="actionQueueTextarea" class="action-area" rows="10" cols="20" placeholder="Each line is a command"></textarea>
+                <div class="editor-container">
+                    <div class="line-numbers" id="lineNumbers"></div>
+                    <textarea id="actionQueueTextarea" class="action-area" rows="10" cols="20" placeholder="Each line is a command" oninput="updateLineNumbers()" onscroll="syncScroll()"></textarea>
+                </div>
             </div>
             <div class="control-buttons">
                 <button onclick="startMovement()" class="btn btn-success">Start</button>
@@ -52,6 +57,10 @@
         </div>
     </div>
 
-    <script src="script.js"></script>
+    <div class="footer">
+        <p>&copy; 2024 FocoBot - <a href="https://nikba.com/" target="_blank">Nikba Creative Studio</a></p>
+    </div>
+
+    <script src="assets/js/script.js"></script>
 </body>
 </html>
