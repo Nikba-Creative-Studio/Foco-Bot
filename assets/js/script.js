@@ -3,6 +3,7 @@ let robotX = 0, robotY = 0;
 let actionQueue = [];
 let moveInterval;
 let currentLineIndex = 0;
+let errorDisplayed = false; 
 
 // --- INITIALIZATION ---
 
@@ -107,22 +108,41 @@ function addAction(action) {
 function startMovement() {
     const actionQueueTextarea = document.getElementById('actionQueueTextarea');
     if (actionQueue.length === 0) {
-        actionQueue = actionQueueTextarea.value.trim().split('\n');
+        actionQueue = actionQueueTextarea.value.trim().split('\n'); // Split each line as an action
     }
 
     if (actionQueue.length === 0 || actionQueue[0] === "") {
-        alert("No actions to execute! Please add actions first.");
+        showModal("No actions to execute! Please add actions first.", false);
         return;
     }
 
-    if (moveInterval) clearInterval(moveInterval);
-
-    moveInterval = setInterval(executeAction, 500); // Move every 500ms
+    errorDisplayed = false; // Reset error state at the beginning of each execution
+    executeNextAction(); // Start the first action
 }
 
-// Stop the robot's movement
+
+// Recursive function to execute actions with a delay
+function executeNextAction() {
+    if (currentLineIndex >= actionQueue.length) {
+        showModal("Execution complete!", true); // Success message
+        currentLineIndex = 0;
+        return;
+    }
+
+    requestAnimationFrame(() => {
+        executeAction(); // Perform the current action
+        if (!errorDisplayed) { // Only schedule next step if no error
+            setTimeout(executeNextAction, 500); // Schedule the next step
+        }
+    });
+}
+
+// Stop the robot's movement and clear interval properly
 function stopMovement() {
-    clearInterval(moveInterval);
+    if (moveInterval) {
+        clearInterval(moveInterval);
+        moveInterval = null; // Reset interval to null to avoid potential conflicts
+    }
 }
 
 // Restart the robot without clearing the command queue
@@ -157,28 +177,86 @@ function resetRobot() {
 
 // Execute each action in the queue sequentially
 function executeAction() {
-    if (currentLineIndex >= actionQueue.length) {
-        stopMovement();
-        currentLineIndex = 0; // Reset the line index after execution
-        return;
+    try {
+        if (currentLineIndex >= actionQueue.length) {
+            stopMovement();
+            currentLineIndex = 0;
+            showModal("Execution complete!", true);
+            return;
+        }
+
+        const action = actionQueue[currentLineIndex].trim();
+        highlightExecutionLine(currentLineIndex);
+
+        // Execute the action and ensure it stays within grid limits
+        switch (action) {
+            case 'up':
+                if (robotY > 0) robotY -= 1;
+                else throw new Error("Robot is out of grid bounds!");
+                break;
+            case 'down':
+                if (robotY < 14) robotY += 1;
+                else throw new Error("Robot is out of grid bounds!");
+                break;
+            case 'left':
+                if (robotX > 0) robotX -= 1;
+                else throw new Error("Robot is out of grid bounds!");
+                break;
+            case 'right':
+                if (robotX < 14) robotX += 1;
+                else throw new Error("Robot is out of grid bounds!");
+                break;
+            case 'rotate':
+                // Rotation logic can be added here
+                break;
+            case 'color':
+                updateRobotPosition(true); // Color the current cell
+                break;
+            default:
+                throw new Error(`Unknown command: ${action}`);
+        }
+
+        updateRobotPosition();
+        currentLineIndex++;
+
+    } catch (error) {
+        if (!errorDisplayed) { // Display the error only once
+            errorDisplayed = true; // Set errorDisplayed to true to prevent duplicate alerts
+            stopMovement();
+            showModal(error.message, false); // Show error message with red button
+        }
     }
-
-    const action = actionQueue[currentLineIndex].trim();
-    
-    highlightExecutionLine(currentLineIndex);
-
-    switch (action) {
-        case 'up': robotY = Math.max(0, robotY - 1); updateRobotPosition(); break;
-        case 'down': robotY = Math.min(14, robotY + 1); updateRobotPosition(); break;
-        case 'left': robotX = Math.max(0, robotX - 1); updateRobotPosition(); break;
-        case 'right': robotX = Math.min(14, robotX + 1); updateRobotPosition(); break;
-        case 'rotate': /* Rotation logic can be added here */ break;
-        case 'color': updateRobotPosition(true); break;
-        default: console.warn(`Unknown command: ${action}`);
-    }
-
-    currentLineIndex++;
 }
+
+
+// Universal function to show modal with a message and button
+function showModal(message, isSuccess = true) {
+    
+    // Create the modal elements
+    const overlay = document.createElement('div');
+    overlay.classList.add('modal-overlay');
+
+    const modal = document.createElement('div');
+    modal.classList.add('modal');
+
+    const messageParagraph = document.createElement('p');
+    messageParagraph.textContent = message;
+
+    const closeButton = document.createElement('button');
+    closeButton.textContent = "Close";
+    closeButton.classList.add(isSuccess ? 'success-button' : 'error-button');
+
+    // Append elements to the modal
+    modal.appendChild(messageParagraph);
+    modal.appendChild(closeButton);
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+
+    // Close the modal when the button is clicked
+    closeButton.onclick = () => document.body.removeChild(overlay);
+}
+
+
 
 // --- EVENT LISTENERS ---
 
