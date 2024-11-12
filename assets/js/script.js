@@ -1,26 +1,26 @@
-// Initialize variables for robot position, action queue, and execution state
-let robotX = 0, robotY = 0;
-let actionQueue = [];
-let moveInterval;
-let currentLineIndex = 0;
-let errorDisplayed = false; 
+// --- VARIABLES ---
+let robotX = 0, robotY = 0;  // Position of the robot on the grid
+let actionQueue = [];        // Queue of actions to execute
+let currentLineIndex = 0;    // Index of the current action in the queue
+let errorDisplayed = false;  // Flag to indicate if an error has been shown
+let isExecuting = false;     // Flag to track if actions are being executed
 
 // --- INITIALIZATION ---
 
-// Create the grid and add the robot in the initial position
-function createGrid() {
+// Creates a 15x15 grid and places the robot at the initial position
+const createGrid = () => {
     const grid = document.getElementById('grid');
     grid.innerHTML = '';
-    for (let i = 0; i < 15 * 15; i++) {
+    Array.from({ length: 15 * 15 }, (_, i) => {
         const cell = document.createElement('div');
         cell.id = `cell-${Math.floor(i / 15)}-${i % 15}`;
         grid.appendChild(cell);
-    }
-    updateRobotPosition(); // Place robot in the initial position
-}
+    });
+    updateRobotPosition();
+};
 
-// Initialize line numbers on page load
-window.onload = function() {
+// Sets up the initial state of the grid and line numbers on page load
+window.onload = () => {
     createGrid();
     updateLineNumbers();
     highlightActiveLine();
@@ -28,155 +28,134 @@ window.onload = function() {
 
 // --- UI UPDATES ---
 
-// Update line numbers in the Command Queue editor
-function updateLineNumbers() {
+// Updates the line numbers in the command queue editor to match the number of lines in the textarea
+const updateLineNumbers = () => {
     const actionQueueTextarea = document.getElementById('actionQueueTextarea');
     const lineNumbers = document.getElementById('lineNumbers');
-    
-    const lineCount = actionQueueTextarea.value.split('\n').length;
+    const lines = actionQueueTextarea.value.split('\n').length;
+
     lineNumbers.innerHTML = '';
+    Array.from({ length: lines }, (_, i) => {
+        const line = document.createElement('div');
+        line.textContent = i + 1;
+        lineNumbers.appendChild(line);
+    });
 
-    // Create line numbers
-    for (let i = 1; i <= lineCount; i++) {
-        const lineNumber = document.createElement('div');
-        lineNumber.textContent = i;
-        lineNumbers.appendChild(lineNumber);
-    }
+    highlightActiveLine();
+};
 
-    highlightActiveLine(); // Highlight the current line
-}
-
-// Highlight the active line based on cursor position
-function highlightActiveLine() {
+// Highlights the currently active line in the textarea based on cursor position
+const highlightActiveLine = () => {
     const actionQueueTextarea = document.getElementById('actionQueueTextarea');
     const lineNumbers = document.getElementById('lineNumbers');
-
-    const cursorPosition = actionQueueTextarea.selectionStart;
-    const textBeforeCursor = actionQueueTextarea.value.substring(0, cursorPosition);
-    const currentLineNumber = textBeforeCursor.split('\n').length;
+    const currentLine = actionQueueTextarea.value
+        .substring(0, actionQueueTextarea.selectionStart)
+        .split('\n').length;
 
     Array.from(lineNumbers.children).forEach(line => line.classList.remove('active-line'));
+    lineNumbers.children[currentLine - 1]?.classList.add('active-line');
+};
 
-    const activeLine = lineNumbers.children[currentLineNumber - 1];
-    if (activeLine) {
-        activeLine.classList.add('active-line');
-    }
-}
+// Syncs the scroll position between the line numbers and the textarea
+const syncScroll = () => {
+    document.getElementById('lineNumbers').scrollTop = document.getElementById('actionQueueTextarea').scrollTop;
+};
 
-// Sync scroll between line numbers and textarea
-function syncScroll() {
-    const actionQueueTextarea = document.getElementById('actionQueueTextarea');
-    const lineNumbers = document.getElementById('lineNumbers');
-    lineNumbers.scrollTop = actionQueueTextarea.scrollTop;
-}
-
-// Highlight the line being executed in the Command Queue
-function highlightExecutionLine(lineIndex) {
+// Highlights a specific line number to indicate which action is currently executing
+const highlightExecutionLine = (lineIndex) => {
     const lineNumbers = document.getElementById('lineNumbers');
     Array.from(lineNumbers.children).forEach(line => line.classList.remove('active-line'));
-
-    const activeLine = lineNumbers.children[lineIndex];
-    if (activeLine) {
-        activeLine.classList.add('active-line');
-    }
-}
+    lineNumbers.children[lineIndex]?.classList.add('active-line');
+};
 
 // --- ROBOT CONTROL ---
 
-// Update robot's position on the grid and color cell if needed
-function updateRobotPosition(color = false) {
+// Updates the robot's position on the grid and colors the cell if the "color" action is executed
+const updateRobotPosition = (color = false) => {
     document.querySelectorAll('.grid div').forEach(cell => cell.classList.remove('robot'));
-
     const currentCell = document.getElementById(`cell-${robotY}-${robotX}`);
     currentCell.classList.add('robot');
-    
-    if (color) {
-        currentCell.style.backgroundColor = '#fb6b25'; // Color cell if 'color' action is executed
-    }
-}
+    if (color) currentCell.style.backgroundColor = '#fb6b25';
+};
 
-// Add an action to the textarea queue
-function addAction(action) {
+// Adds an action to the command queue in the textarea and updates line numbers
+const addAction = (action) => {
     const actionQueueTextarea = document.getElementById('actionQueueTextarea');
-    actionQueueTextarea.value += action + '\n'; // Append action to textarea
-    updateLineNumbers(); // Update line numbers to reflect new line
-}
+    actionQueueTextarea.value += `${action}\n`;
+    updateLineNumbers();
+};
 
 // --- EXECUTION CONTROL ---
 
-// Start moving the robot based on the queued actions
-function startMovement() {
+// Starts the execution of actions in the queue if any actions are present
+const startMovement = () => {
     const actionQueueTextarea = document.getElementById('actionQueueTextarea');
-    if (actionQueue.length === 0) {
-        actionQueue = actionQueueTextarea.value.trim().split('\n'); // Split each line as an action
-    }
+    
+    // Always re-populate the actionQueue from the textarea on each start
+    actionQueue = actionQueueTextarea.value.trim().split('\n');
 
-    if (actionQueue.length === 0 || actionQueue[0] === "") {
+    // Check if there are actions to execute
+    if (!actionQueue.length || !actionQueue[0]) {
         showModal("No actions to execute! Please add actions first.", false);
         return;
     }
 
-    errorDisplayed = false; // Reset error state at the beginning of each execution
-    executeNextAction(); // Start the first action
-}
+    errorDisplayed = false;
+    isExecuting = true;
+    currentLineIndex = 0; // Start from the first command
+    executeNextAction();
+};
 
+// Executes the next action in the queue with a delay to allow smooth animation
+const executeNextAction = () => {
+    if (!isExecuting) return; // Stop execution if isExecuting is false
 
-// Recursive function to execute actions with a delay
-function executeNextAction() {
     if (currentLineIndex >= actionQueue.length) {
-        showModal("Execution complete!", true); // Success message
+        if (isExecuting) { // Check if execution completed naturally
+            showModal("Execution complete!", true);
+        }
         currentLineIndex = 0;
+        isExecuting = false;
         return;
     }
 
     requestAnimationFrame(() => {
-        executeAction(); // Perform the current action
-        if (!errorDisplayed) { // Only schedule next step if no error
-            setTimeout(executeNextAction, 500); // Schedule the next step
-        }
+        executeAction();
+        if (!errorDisplayed && isExecuting) setTimeout(executeNextAction, 500);
     });
-}
+};
 
-// Stop the robot's movement and clear interval properly
-function stopMovement() {
-    if (moveInterval) {
-        clearInterval(moveInterval);
-        moveInterval = null; // Reset interval to null to avoid potential conflicts
-    }
-}
+// Stops the execution of actions by setting isExecuting to false
+const stopMovement = () => {
+    isExecuting = false; // Set execution to false to stop further actions
+};
 
-// Restart the robot without clearing the command queue
-function restartRobot() {
-    document.querySelectorAll('.grid div').forEach(cell => {
-        cell.style.backgroundColor = ''; // Reset color of all cells
-    });
+// Resets the robot's position and clears any cell color, without clearing the command queue
+const restartRobot = () => {
+    document.querySelectorAll('.grid div').forEach(cell => cell.style.backgroundColor = ''); // Reset cell colors
 
     robotX = 0;
     robotY = 0;
-    currentLineIndex = 0; // Restart from the first command in the queue
+    currentLineIndex = 0;  // Start from the first command in the queue
 
     updateRobotPosition();
     stopMovement();
-}
+};
 
-// Reset the robot to the initial state, clear colors, and clear command queue
-function resetRobot() {
+// Resets the robot, clears the command queue and all cell colors, and resets line numbers
+const resetRobot = () => {
     document.getElementById('actionQueueTextarea').value = ''; // Clear textarea
-    actionQueue = [];
-    robotX = robotY = 0;
-    currentLineIndex = 0;
+    actionQueue = []; // Clear the action queue
+    robotX = robotY = currentLineIndex = 0;
 
-    document.querySelectorAll('.grid div').forEach(cell => {
-        cell.style.backgroundColor = ''; // Reset color to default
-    });
-
+    document.querySelectorAll('.grid div').forEach(cell => cell.style.backgroundColor = ''); // Reset cell colors
     updateRobotPosition();
     stopMovement();
-    updateLineNumbers(); // Clear line numbers after reset
-}
+    updateLineNumbers(); // Reset line numbers
+};
 
-// Execute each action in the queue sequentially
-function executeAction() {
+// Executes the current action from the queue, updating the robot position and handling errors
+const executeAction = () => {
     try {
         if (currentLineIndex >= actionQueue.length) {
             stopMovement();
@@ -188,51 +167,32 @@ function executeAction() {
         const action = actionQueue[currentLineIndex].trim();
         highlightExecutionLine(currentLineIndex);
 
-        // Execute the action and ensure it stays within grid limits
         switch (action) {
-            case 'up':
-                if (robotY > 0) robotY -= 1;
-                else throw new Error("Robot is out of grid bounds!");
-                break;
-            case 'down':
-                if (robotY < 14) robotY += 1;
-                else throw new Error("Robot is out of grid bounds!");
-                break;
-            case 'left':
-                if (robotX > 0) robotX -= 1;
-                else throw new Error("Robot is out of grid bounds!");
-                break;
-            case 'right':
-                if (robotX < 14) robotX += 1;
-                else throw new Error("Robot is out of grid bounds!");
-                break;
-            case 'rotate':
-                // Rotation logic can be added here
-                break;
-            case 'color':
-                updateRobotPosition(true); // Color the current cell
-                break;
-            default:
-                throw new Error(`Unknown command: ${action}`);
+            case 'up': if (robotY > 0) robotY -= 1; else throw new Error("Robot is out of grid bounds!"); break;
+            case 'down': if (robotY < 14) robotY += 1; else throw new Error("Robot is out of grid bounds!"); break;
+            case 'left': if (robotX > 0) robotX -= 1; else throw new Error("Robot is out of grid bounds!"); break;
+            case 'right': if (robotX < 14) robotX += 1; else throw new Error("Robot is out of grid bounds!"); break;
+            case 'rotate': break; // Rotation logic can be added here
+            case 'color': updateRobotPosition(true); break;
+            default: throw new Error(`Unknown command: ${action}`);
         }
 
         updateRobotPosition();
         currentLineIndex++;
 
     } catch (error) {
-        if (!errorDisplayed) { // Display the error only once
-            errorDisplayed = true; // Set errorDisplayed to true to prevent duplicate alerts
+        if (!errorDisplayed) {
+            errorDisplayed = true;
             stopMovement();
-            showModal(error.message, false); // Show error message with red button
+            showModal(error.message, false);
         }
     }
-}
+};
 
+// --- MODAL FUNCTION ---
 
-// Universal function to show modal with a message and button
-function showModal(message, isSuccess = true) {
-    
-    // Create the modal elements
+// Displays a modal with a message and a close button; green if success, red if error
+const showModal = (message, isSuccess = true) => {
     const overlay = document.createElement('div');
     overlay.classList.add('modal-overlay');
 
@@ -246,20 +206,16 @@ function showModal(message, isSuccess = true) {
     closeButton.textContent = "Close";
     closeButton.classList.add(isSuccess ? 'success-button' : 'error-button');
 
-    // Append elements to the modal
-    modal.appendChild(messageParagraph);
-    modal.appendChild(closeButton);
+    modal.append(messageParagraph, closeButton);
     overlay.appendChild(modal);
     document.body.appendChild(overlay);
 
-    // Close the modal when the button is clicked
     closeButton.onclick = () => document.body.removeChild(overlay);
-}
-
-
+};
 
 // --- EVENT LISTENERS ---
 
+// Adds event listeners for interaction with the action queue textarea
 document.getElementById('actionQueueTextarea').addEventListener('click', highlightActiveLine);
 document.getElementById('actionQueueTextarea').addEventListener('keyup', highlightActiveLine);
 document.getElementById('actionQueueTextarea').addEventListener('scroll', syncScroll);
