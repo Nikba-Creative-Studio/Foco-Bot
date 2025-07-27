@@ -75,7 +75,16 @@ const updateRobotPosition = (color = false) => {
     document.querySelectorAll('.grid div').forEach(cell => cell.classList.remove('robot'));
     const currentCell = document.getElementById(`cell-${robotY}-${robotX}`);
     currentCell.classList.add('robot');
-    if (color) currentCell.style.backgroundColor = '#fb6b25';
+    
+    // Color the current cell if color action is executed
+    if (color) {
+        currentCell.style.backgroundColor = '#fb6b25';
+    } else {
+        // Add trail effect - color the cell the robot passes through with violet gradient
+        currentCell.style.background = 'linear-gradient(to bottom right, #8b5cf6 0, #a855f7)';
+        currentCell.style.opacity = '0.8';
+        currentCell.style.borderRadius = '50%';
+    }
 };
 
 // Adds an action to the command queue in the textarea and updates line numbers
@@ -132,7 +141,12 @@ const stopMovement = () => {
 
 // Resets the robot's position and clears any cell color, without clearing the command queue
 const restartRobot = () => {
-    document.querySelectorAll('.grid div').forEach(cell => cell.style.backgroundColor = ''); // Reset cell colors
+    document.querySelectorAll('.grid div').forEach(cell => {
+        cell.style.backgroundColor = '';
+        cell.style.background = '';
+        cell.style.opacity = '';
+        cell.style.borderRadius = '';
+    }); // Reset all cell styles
 
     robotX = 0;
     robotY = 0;
@@ -148,7 +162,12 @@ const resetRobot = () => {
     actionQueue = []; // Clear the action queue
     robotX = robotY = currentLineIndex = 0;
 
-    document.querySelectorAll('.grid div').forEach(cell => cell.style.backgroundColor = ''); // Reset cell colors
+    document.querySelectorAll('.grid div').forEach(cell => {
+        cell.style.backgroundColor = '';
+        cell.style.background = '';
+        cell.style.opacity = '';
+        cell.style.borderRadius = '';
+    }); // Reset all cell styles
     updateRobotPosition();
     stopMovement();
     updateLineNumbers(); // Reset line numbers

@@ -144,6 +144,13 @@ h2 {
 .robot {
     background-image: linear-gradient(to bottom right, #f1bf64 0, #f71d36) !important;
     border-radius: 50%;
+    z-index: 2;
+    position: relative;
+}
+
+/* Trail effect styling - using violet gradient colors */
+.grid div[style*="linear-gradient(to bottom right, #8b5cf6 0, #a855f7)"] {
+    transition: background 0.3s ease;
 }
 
 /* --- Button Styling --- */
